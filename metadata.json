@@ -1,0 +1,5 @@
+{
+  "name": "Smart Tab Organizer",
+  "description": "An AI-powered tool that automatically categorizes your messy browser tabs into logical groups using Gemini Flash.",
+  "requestFramePermissions": []
+}
