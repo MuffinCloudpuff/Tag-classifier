@@ -6,7 +6,7 @@ import { TabList } from './components/TabList';
 import { GroupGrid } from './components/GroupGrid';
 import { VortexVisualizer } from './components/VortexVisualizer'; // Import new visualizer
 import { Sparkles, Layers, ArrowRight, Copy, Check, Download, AlignLeft, ListTree, Network, Trash2, Sun, Moon } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 // --- State Machine Type Definition ---
 // 'idle' = Initial state, showing input and list
@@ -68,8 +68,8 @@ const App: React.FC = () => {
   const [tabs, setTabs] = useState<TabItem[]>([]);
   const [inputText, setInputText] = useState('');
   
-  // Theme State
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  // Theme State (Default to Light Mode)
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // New State Machine Logic
   const [appState, setAppState] = useState<AppState>('idle');
@@ -289,7 +289,7 @@ const App: React.FC = () => {
   };
 
   // --- Animation Variants for Shatter Effect ---
-  const containerVariants = {
+  const containerVariants: Variants = {
     idle: { opacity: 1, scale: 1, filter: "blur(0px)" },
     exploding: { 
         opacity: 0, 

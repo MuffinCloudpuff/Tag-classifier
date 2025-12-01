@@ -137,7 +137,7 @@ export const VortexVisualizer: React.FC<VortexVisualizerProps> = ({
   isDarkMode
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const requestRef = useRef<number>();
+  const requestRef = useRef<number | null>(null);
   
   // Developer Controls State
   const [showDevTools, setShowDevTools] = useState(false);

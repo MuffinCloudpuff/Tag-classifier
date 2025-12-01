@@ -62,14 +62,14 @@ const SubGroupNode: React.FC<SubGroupProps> = ({ group, depth = 0, isDarkMode })
 
   // Visual styling based on depth and theme
   // We use subtle borders for hierarchy without adding heavy backgrounds
-  const borderClass = isDarkMode ? 'border-white/10' : 'border-black/5';
   const textClass = isDarkMode ? 'text-zinc-400' : 'text-zinc-500';
 
+  // Modified depth styles to remove borders and indentation as requested
   const depthStyles = {
     0: '', 
-    1: `mt-3 pl-3 border-l-2 ${borderClass} py-1`, 
-    2: `mt-2 pl-3 border-l ${borderClass}`, 
-    3: `mt-1 pl-2 border-l ${borderClass} opacity-80`, 
+    1: 'mt-4', 
+    2: 'mt-3', 
+    3: 'mt-2 opacity-80', 
   };
   
   const currentDepthStyle = depthStyles[depth as keyof typeof depthStyles] || depthStyles[3];
@@ -78,7 +78,7 @@ const SubGroupNode: React.FC<SubGroupProps> = ({ group, depth = 0, isDarkMode })
     <div className={`flex flex-col ${depth > 0 ? currentDepthStyle : ''}`}>
       {/* Group Header */}
       {depth > 0 && (
-        <div className="flex items-center gap-2 mb-2 pt-1">
+        <div className="flex items-center gap-2 mb-2 px-3">
            <span className="text-sm opacity-80">{group.emoji}</span>
            <span className={`font-semibold ${textClass} ${depth === 1 ? 'text-sm uppercase tracking-wider' : 'text-xs'}`}>
              {group.groupName}

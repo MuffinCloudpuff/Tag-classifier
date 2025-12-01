@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { GoogleGenAI, Type, Schema, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { TabItem, OrganizeResponse } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -80,46 +80,72 @@ export const organizeTabsWithGemini = async (tabs: TabItem[], depth: number = 2)
   if (depth === 1) {
     depthInstruction = `
     - **结构深度**：仅使用 **1 级** 扁平分类。
-    - 不要创建子文件夹。
-    - 直接将所有标签归类到主要的顶级类别中（例如："技术", "购物", "新闻"）。`;
+    - 必须基于“用户意图”进行宏观归类（如“个人成长”、“工作生产力”、“生活娱乐”）。`;
   } else if (depth === 2) {
     depthInstruction = `
     - **结构深度**：使用 **2 级** 嵌套结构。
-    - 一级为大类（如“技术开发”），二级为子类（如“前端”、“后端”）。
-    - 尽量将标签放入二级子类中，保持整洁。`;
+    - 一级为“行为动机”（如“技术开发”、“学习提升”），二级为“具体领域”（如“前端工具”、“数学/数电”）。`;
   } else {
     depthInstruction = `
     - **结构深度**：使用 **3 级** 深度结构。
-    - 一级(领域) -> 二级(方向) -> 三级(具体技术/项目)。
-    - 适合复杂的知识库整理。`;
+    - 一级(动机/场景) -> 二级(领域) -> 三级(具体项目/技术)。`;
   }
 
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
-    contents: JSON.stringify(simpleList),
+    contents: {
+      role: 'user',
+      parts: [{
+        text: `Please organize the following ${simpleList.length} browser tabs into logical groups according to the system instructions.\n\nJSON Data:\n${JSON.stringify(simpleList)}`
+      }]
+    },
     config: {
-      systemInstruction: `你是一位专业的浏览器标签页整理专家。
-      你的目标是将提供的标签页列表整理成具有层级结构的文件夹。
+      systemInstruction: `你是一位结合了**认知心理学**与**知识管理学**的高级整理专家。
+      你的任务不仅仅是看关键词分类，而是分析用户保存该网页背后的**行为动机 (User Intent)** 和 **心理诉求**。
+
+      ### 核心分析逻辑 (Psychological Profiling)：
+      不要只看表面标题，要问自己：“用户为什么要保存这个？”
+
+      1. **学习与自我提升 (Learning & Growth)**
+         - 标志：教程、课程、基础理论、学术概念、考试资料。
+         - *案例*：即使标题含“电子”，如果是“数字电路基础”或“大学课件”，它是**学习资料**，应归入【学习/教育】或【知识库】，而不是“硬科技”。
       
-      核心配置：用户指定了分类深度为 **${depth} 层**。
+      2. **工作与生产力 (Productivity & Development)**
+         - 标志：工具文档、GitHub 库、API 参考、SaaS 工具、解决方案。
+         - *案例*：“机器人视觉算法”、“OpenCV文档”是用来**干活/开发**的，应归入【技术开发】或【AI工具】，因为这是生产力场景。
+
+      3. **资源与素材 (Resources & Assets)**
+         - 标志：图片素材、字体下载、配色网、模型库。
+         - 归类为【设计资源】或【素材库】。
+
+      4. **生活与娱乐 (Life & Entertainment)**
+         - 标志：购物、游戏、视频、社交、新闻。
+
+      ### 修正规则 (Correction Rules)：
+      - **纠正**：不要把“数电/模电”放在“科技新闻”或“硬件产品”里，它们通常是用户的【学习资料】。
+      - **纠正**：不要把“AI 绘图工具”放在“艺术欣赏”里，它是【生产力工具】。
       
-      规则：
-      1. **分类逻辑**：
-         - 先识别整体领域，再根据深度要求细分。
-         - 确保所有 ID 都被分配。
-         - 组名简短精炼（2-6个中文字符）。
-      
+      ### 结构要求：
+      - 核心配置：用户指定了分类深度为 **${depth} 层**。
       ${depthInstruction}
+      - 确保所有 ID 都被分配，不要遗漏。
+      - 组名简短精炼，直击用户意图（2-6个中文字符）。
       
-      3. **Strict JSON**：严格按照 Schema 返回 JSON 数据。`,
+      Strictly follow the JSON schema provided.`,
       responseMimeType: "application/json",
-      responseSchema: createSchema(depth)
+      responseSchema: createSchema(depth),
+      safetySettings: [
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      ],
     }
   });
 
   const text = response.text;
   if (!text) {
-    throw new Error("Gemini 没有返回任何内容");
+    throw new Error("Gemini 没有返回任何内容。可能是因为输入内容包含了被安全过滤器拦截的敏感词汇，或者模型暂时繁忙。");
   }
 
   try {
